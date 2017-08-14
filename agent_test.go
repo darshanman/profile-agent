@@ -1,4 +1,4 @@
-package stackimpact
+package profileagent
 
 import (
 	"errors"

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/stackimpact/stackimpact-go/internal/pprof/profile"
+	"github.com/darshanman/profile-agent/internal/pprof/profile"
 )
 
 //CPUReporter .,.

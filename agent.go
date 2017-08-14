@@ -1,10 +1,10 @@
-package stackimpact
+package profileagent
 
 import (
 	"fmt"
 	"net/http"
 
-	"github.com/stackimpact/stackimpact-go/internal"
+	"github.com/darshanman/profile-agent/internal"
 )
 
 //ErrorGroupRecoveredPanics ...

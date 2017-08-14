@@ -10,7 +10,7 @@ import (
 	"runtime/pprof"
 	"time"
 
-	profile "github.com/stackimpact/stackimpact-go/internal/pprof/profile"
+	profile "github.com/darshanman/profile-agent/internal/pprof/profile"
 )
 
 //BlockValues ...
