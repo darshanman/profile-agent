@@ -12,10 +12,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/stackimpact/stackimpact-go"
+	"github.com/darshanman/profile-agent"
 )
 
-var agent *stackimpact.Agent
+var agent *profileagent.Agent
 
 func useCPU(duration int, usage int) {
 	for j := 0; j < duration; j++ {
@@ -278,7 +278,7 @@ func simulateErrors() {
 
 func main() {
 	// StackImpact initialization
-	agent = stackimpact.Start(stackimpact.Options{
+	agent = profileagent.Start(profileagent.Options{
 		AgentKey:         os.Getenv("AGENT_KEY"),
 		AppName:          "ExampleGoApp",
 		AppVersion:       "1.0.0",

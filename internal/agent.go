@@ -17,12 +17,30 @@ import (
 const AgentVersion = "2.0.1"
 
 //SAASDashboardAddress ....
-const SAASDashboardAddress = "https://agent-api.stackimpact.com"
+const SAASDashboardAddress = "http://localhost:8080/metrics"
 
 var agentStarted bool
 
 //Agent ...
-type Agent struct {
+type Agent interface {
+	Start()
+	RecordSegment(string, float64)
+	RecordError(group string, msg interface{}, skipFrames int)
+	Log(format string, values ...interface{})
+	Error(error)
+	//Getters
+	GetAPIRequest() *APIRequest
+	GetConfig() *Config
+	GetConfigLoader() *ConfigLoader
+	GetMessageQueue() *MessageQueue
+	GetProcessReporter() *ProcessReporter
+	GetCPUReporter() *CPUReporter
+	GetAllocationReporter() *AllocationReporter
+	GetBlockReporter() *BlockReporter
+	GetSegmentReporter() *SegmentReporter
+	GetErrorReporter() *ErrorReporter
+}
+type agent struct {
 	nextID  int64
 	buildID string
 	runID   string
@@ -54,8 +72,8 @@ type Agent struct {
 }
 
 //NewAgent ...
-func NewAgent() *Agent {
-	a := &Agent{
+func NewAgent() Agent {
+	a := &agent{
 		nextID:  0,
 		runID:   "",
 		buildID: "",
@@ -84,7 +102,6 @@ func NewAgent() *Agent {
 		Debug:            false,
 		ProfileAgent:     false,
 	}
-
 	a.buildID = a.calculateProgramSHA1()
 	a.runID = a.uuid()
 
@@ -103,7 +120,7 @@ func NewAgent() *Agent {
 }
 
 //Start ...
-func (a *Agent) Start() {
+func (a *agent) Start() {
 	if agentStarted {
 		return
 	}
@@ -112,7 +129,7 @@ func (a *Agent) Start() {
 	if a.HostName == "" {
 		hostName, err := os.Hostname()
 		if err != nil {
-			a.error(err)
+			a.Error(err)
 		}
 		a.HostName = hostName
 	}
@@ -126,22 +143,22 @@ func (a *Agent) Start() {
 	a.segmentReporter.start()
 	a.errorReporter.start()
 
-	a.log("Agent started.")
+	a.Log("Agent started.")
 
 	return
 }
 
-func (a *Agent) calculateProgramSHA1() string {
+func (a *agent) calculateProgramSHA1() string {
 	file, err := os.Open(os.Args[0])
 	if err != nil {
-		a.error(err)
+		a.Error(err)
 		return ""
 	}
 	defer file.Close()
 
 	hash := sha1.New()
 	if _, err := io.Copy(hash, file); err != nil {
-		a.error(err)
+		a.Error(err)
 		return ""
 	}
 
@@ -149,7 +166,7 @@ func (a *Agent) calculateProgramSHA1() string {
 }
 
 //RecordSegment ...
-func (a *Agent) RecordSegment(name string, duration float64) {
+func (a *agent) RecordSegment(name string, duration float64) {
 	if !agentStarted {
 		return
 	}
@@ -158,7 +175,7 @@ func (a *Agent) RecordSegment(name string, duration float64) {
 }
 
 //RecordError ...
-func (a *Agent) RecordError(group string, msg interface{}, skipFrames int) {
+func (a *agent) RecordError(group string, msg interface{}, skipFrames int) {
 	if !agentStarted {
 		return
 	}
@@ -174,7 +191,7 @@ func (a *Agent) RecordError(group string, msg interface{}, skipFrames int) {
 	a.errorReporter.recordError(group, err, skipFrames+1)
 }
 
-func (a *Agent) log(format string, values ...interface{}) {
+func (a *agent) Log(format string, values ...interface{}) {
 	if a.Debug {
 		fmt.Printf("["+time.Now().Format(time.StampMilli)+"]"+
 			" StackImpact "+AgentVersion+": "+
@@ -182,7 +199,7 @@ func (a *Agent) log(format string, values ...interface{}) {
 	}
 }
 
-func (a *Agent) error(err error) {
+func (a *agent) Error(err error) {
 	if a.Debug {
 		fmt.Println("[" + time.Now().Format(time.StampMilli) + "]" +
 			" StackImpact " + AgentVersion + ": Error")
@@ -190,13 +207,13 @@ func (a *Agent) error(err error) {
 	}
 }
 
-func (a *Agent) recoverAndLog() {
+func (a *agent) recoverAndLog() {
 	if err := recover(); err != nil {
-		a.log("Recovered from panic in agent: %v", err)
+		a.Log("Recovered from panic in agent: %v", err)
 	}
 }
 
-func (a *Agent) uuid() string {
+func (a *agent) uuid() string {
 	n := atomic.AddInt64(&a.nextID, 1)
 
 	uuid :=
@@ -212,4 +229,40 @@ func sha1String(s string) string {
 	sha1.Write([]byte(s))
 
 	return hex.EncodeToString(sha1.Sum(nil))
+}
+
+//Getters
+
+func (a *agent) GetAPIRequest() *APIRequest {
+	return a.apiRequest
+}
+
+func (a *agent) GetConfig() *Config {
+	return a.config
+}
+func (a *agent) GetConfigLoader() *ConfigLoader {
+	return a.configLoader
+}
+func (a *agent) GetMessageQueue() *MessageQueue {
+	return a.messageQueue
+}
+func (a *agent) GetProcessReporter() *ProcessReporter {
+	return a.processReporter
+}
+func (a *agent) GetCPUReporter() *CPUReporter {
+	return a.cpuReporter
+}
+func (a *agent) GetAllocationReporter() *AllocationReporter {
+	return a.allocationReporter
+}
+
+func (a *agent) GetBlockReporter() *BlockReporter {
+	return a.blockReporter
+}
+
+func (a *agent) GetSegmentReporter() *SegmentReporter {
+	return a.segmentReporter
+}
+func (a *agent) GetErrorReporter() *ErrorReporter {
+	return a.errorReporter
 }

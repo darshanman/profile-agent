@@ -9,12 +9,12 @@ import (
 
 //ErrorReporter ...
 type ErrorReporter struct {
-	agent       *Agent
+	agent       Agent
 	recordLock  *sync.RWMutex
 	errorGraphs map[string]*BreakdownNode
 }
 
-func newErrorReporter(agent *Agent) *ErrorReporter {
+func newErrorReporter(agent Agent) *ErrorReporter {
 	er := &ErrorReporter{
 		agent:       agent,
 		recordLock:  &sync.RWMutex{},

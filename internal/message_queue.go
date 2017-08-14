@@ -14,14 +14,14 @@ type Message struct {
 
 //MessageQueue  ...
 type MessageQueue struct {
-	agent               *Agent
+	agent               Agent
 	queue               []Message
 	queueLock           *sync.Mutex
 	lastUploadTimestamp int64
 	backoffSeconds      int
 }
 
-func newMessageQueue(agent *Agent) *MessageQueue {
+func newMessageQueue(agent Agent) *MessageQueue {
 	mq := &MessageQueue{
 		agent:               agent,
 		queue:               make([]Message, 0),

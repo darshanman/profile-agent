@@ -38,11 +38,11 @@ func readMemAlloc() float64 {
 
 //AllocationReporter ...
 type AllocationReporter struct {
-	agent             *Agent
+	agent             Agent
 	profilerScheduler *ProfilerScheduler
 }
 
-func newAllocationReporter(agent *Agent) *AllocationReporter {
+func newAllocationReporter(agent Agent) *AllocationReporter {
 	ar := &AllocationReporter{
 		agent:             agent,
 		profilerScheduler: nil,
@@ -62,11 +62,11 @@ func (ar *AllocationReporter) start() {
 }
 
 func (ar *AllocationReporter) report() {
-	if ar.agent.config.isProfilingDisabled() {
+	if ar.agent.GetConfig().isProfilingDisabled() {
 		return
 	}
 
-	ar.agent.log("Reading heap profile...")
+	ar.agent.Log("Reading heap profile...")
 	p, e := ar.readHeapProfile()
 	if e != nil {
 		ar.agent.error(e)

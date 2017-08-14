@@ -6,10 +6,10 @@ import (
 
 //ConfigLoader ...
 type ConfigLoader struct {
-	agent *Agent
+	agent Agent
 }
 
-func newConfigLoader(agent *Agent) *ConfigLoader {
+func newConfigLoader(agent Agent) *ConfigLoader {
 	cl := &ConfigLoader{
 		agent: agent,
 	}

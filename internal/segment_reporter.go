@@ -7,13 +7,13 @@ import (
 
 //SegmentReporter ...
 type SegmentReporter struct {
-	agent            *Agent
+	agent            Agent
 	segmentNodes     map[string]*BreakdownNode
 	segmentDurations map[string]*float64
 	recordLock       *sync.RWMutex
 }
 
-func newSegmentReporter(agent *Agent) *SegmentReporter {
+func newSegmentReporter(agent Agent) *SegmentReporter {
 	sr := &SegmentReporter{
 		agent:            agent,
 		segmentNodes:     make(map[string]*BreakdownNode),

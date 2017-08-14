@@ -16,12 +16,12 @@ import (
 
 //APIRequest ...
 type APIRequest struct {
-	agent *Agent
+	a Agent
 }
 
-func newAPIRequest(agent *Agent) *APIRequest {
+func newAPIRequest(a Agent) *APIRequest {
 	ar := &APIRequest{
-		agent: agent,
+		a: a,
 	}
 
 	return ar
@@ -32,7 +32,7 @@ func (ar *APIRequest) post(endpoint string, payload map[string]interface{}) (map
 		"runtime_type":    "go",
 		"runtime_version": runtime.Version(),
 		"agent_version":   AgentVersion,
-		"app_name":        ar.agent.AppName,
+		"app_name":        ar.agent.GetAppName,
 		"app_version":     ar.agent.AppVersion,
 		"app_environment": ar.agent.AppEnvironment,
 		"host_name":       ar.agent.HostName,

@@ -20,7 +20,7 @@ type ProfilerScheduler struct {
 }
 
 func newProfilerScheduler(
-	agent *Agent,
+	agent Agent,
 	recordInterval int64,
 	recordDuration int64,
 	reportInterval int64,
