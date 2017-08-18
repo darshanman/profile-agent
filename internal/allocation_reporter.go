@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"runtime"
 	"runtime/pprof"
@@ -38,11 +39,11 @@ func readMemAlloc() float64 {
 
 //AllocationReporter ...
 type AllocationReporter struct {
-	agent             Agent
+	agent             *Agent
 	profilerScheduler *ProfilerScheduler
 }
 
-func newAllocationReporter(agent Agent) *AllocationReporter {
+func newAllocationReporter(agent *Agent) *AllocationReporter {
 	ar := &AllocationReporter{
 		agent:             agent,
 		profilerScheduler: nil,
@@ -62,20 +63,20 @@ func (ar *AllocationReporter) start() {
 }
 
 func (ar *AllocationReporter) report() {
-	if ar.agent.GetConfig().isProfilingDisabled() {
+	if ar.agent.config.profilingDisabled {
 		return
 	}
 
-	ar.agent.Log("Reading heap profile...")
+	log.Println("Reading heap profile...")
 	p, e := ar.readHeapProfile()
 	if e != nil {
-		ar.agent.error(e)
+		log.Println("ERR: ", e)
 		return
 	}
 	if p == nil {
 		return
 	}
-	ar.agent.log("Done.")
+	log.Println("Done.")
 
 	// allocated size
 	if callGraph, err := ar.createAllocationCallGraph(p); err != nil {
@@ -86,7 +87,8 @@ func (ar *AllocationReporter) report() {
 
 		metric := newMetric(ar.agent, TypeProfile, CategoryMemoryProfile, NameHeapAllocation, UnitByte)
 		metric.createMeasurement(TriggerTimer, callGraph.measurement, 0, callGraph)
-		ar.agent.messageQueue.addMessage("metric", metric.toMap())
+		ar.agent.messageQueue.pushMessage("memory", metric.toStringArray())
+		// ar.agent.messageQueue.addMessage("metric", metric.toMap())
 	}
 }
 

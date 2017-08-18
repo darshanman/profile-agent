@@ -6,10 +6,10 @@ import (
 
 //ConfigLoader ...
 type ConfigLoader struct {
-	agent Agent
+	agent *Agent
 }
 
-func newConfigLoader(agent Agent) *ConfigLoader {
+func newConfigLoader(agent *Agent) *ConfigLoader {
 	cl := &ConfigLoader{
 		agent: agent,
 	}
@@ -18,7 +18,8 @@ func newConfigLoader(agent Agent) *ConfigLoader {
 }
 
 func (cl *ConfigLoader) start() {
-	loadDelay := time.NewTimer(2 * time.Second)
+	// return
+	loadDelay := time.NewTimer(500 * time.Millisecond)
 	go func() {
 		defer cl.agent.recoverAndLog()
 
@@ -40,6 +41,8 @@ func (cl *ConfigLoader) start() {
 }
 
 func (cl *ConfigLoader) load() {
+	// cl.agent.config.setProfilingDisabled(false)
+	return
 	payload := map[string]interface{}{}
 	if config, err := cl.agent.apiRequest.post("config", payload); err == nil {
 		// profiling_enabled yes|no

@@ -1,27 +1,29 @@
 package internal
 
 import (
+	"log"
 	"sync"
 	"time"
 )
 
 //Message ...
 type Message struct {
-	topic   string
-	content map[string]interface{}
-	addedAt int64
+	topic         string
+	content       map[string]interface{}
+	contentString []string
+	addedAt       int64
 }
 
 //MessageQueue  ...
 type MessageQueue struct {
-	agent               Agent
+	agent               *Agent
 	queue               []Message
 	queueLock           *sync.Mutex
 	lastUploadTimestamp int64
 	backoffSeconds      int
 }
 
-func newMessageQueue(agent Agent) *MessageQueue {
+func newMessageQueue(agent *Agent) *MessageQueue {
 	mq := &MessageQueue{
 		agent:               agent,
 		queue:               make([]Message, 0),
@@ -34,7 +36,7 @@ func newMessageQueue(agent Agent) *MessageQueue {
 }
 
 func (mq *MessageQueue) start() {
-	flushTicker := time.NewTicker(5 * time.Second)
+	flushTicker := time.NewTicker(1 * time.Second)
 
 	go func() {
 		defer mq.agent.recoverAndLog()
@@ -46,10 +48,12 @@ func (mq *MessageQueue) start() {
 				l := len(mq.queue)
 				mq.queueLock.Unlock()
 
-				if l > 0 && (mq.lastUploadTimestamp+int64(mq.backoffSeconds) < time.Now().Unix()) {
+				// if l > 0 && (mq.lastUploadTimestamp+int64(mq.backoffSeconds) < time.Now().Unix()) {
+				if l > 0 {
 					mq.expire()
 					mq.flush()
 				}
+				// }
 			}
 		}
 	}()
@@ -69,12 +73,14 @@ func (mq *MessageQueue) expire() {
 }
 
 func (mq *MessageQueue) flush() {
+	log.Println("Flushing the queue")
 	mq.queueLock.Lock()
 	outgoing := mq.queue
 	mq.queue = make([]Message, 0)
 	mq.queueLock.Unlock()
 
 	messages := make([]interface{}, 0)
+	payload := make([]string, 0)
 	for _, m := range outgoing {
 		message := map[string]interface{}{
 			"topic":   m.topic,
@@ -82,15 +88,19 @@ func (mq *MessageQueue) flush() {
 		}
 
 		messages = append(messages, message)
+		payload = append(payload, m.contentString...)
 	}
 
-	payload := map[string]interface{}{
-		"messages": messages,
-	}
+	// for _, msg := range mq.queue {
+	// 	payload = append(payload, msg.contentString...)
+	// }
+	// payload := map[string]interface{}{
+	// 	"messages": messages,
+	// }
 
 	mq.lastUploadTimestamp = time.Now().Unix()
-
-	if _, err := mq.agent.apiRequest.post("upload", payload); err == nil {
+	log.Println("uploading the queue")
+	if _, err := mq.agent.apiRequest.push("upload", payload); err == nil {
 		// reset backoff
 		mq.backoffSeconds = 0
 	} else {
@@ -107,8 +117,23 @@ func (mq *MessageQueue) flush() {
 			mq.backoffSeconds *= 2
 		}
 
-		mq.agent.error(err)
+		log.Println("ERR: ", err)
 	}
+}
+func (mq *MessageQueue) pushMessage(topic string, messages []string) {
+	defer mq.flush()
+	m := Message{
+		topic:         topic,
+		contentString: messages,
+		addedAt:       time.Now().Unix(),
+	}
+
+	mq.queueLock.Lock()
+	mq.queue = append(mq.queue, m)
+	mq.queueLock.Unlock()
+
+	log.Printf("Added message to the queue for topic: %v", topic)
+	log.Printf("%v", messages)
 }
 
 func (mq *MessageQueue) addMessage(topic string, message map[string]interface{}) {

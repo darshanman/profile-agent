@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/darshanman/profile-agent/internal"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 //ErrorGroupRecoveredPanics ...
@@ -16,17 +17,19 @@ const ErrorGroupUnrecoveredPanics string = "Unrecovered panics"
 //ErrorGroupHandledExceptions ...
 const ErrorGroupHandledExceptions string = "Handled exceptions"
 
+var Histo *prometheus.HistogramVec
+
 //Options ...
 type Options struct {
-	DashboardAddress string
-	ProxyAddress     string
-	AgentKey         string
-	AppName          string
-	AppVersion       string
-	AppEnvironment   string
-	HostName         string
-	Debug            bool
-	ProfileAgent     bool
+	PromethRoute   string
+	ProxyAddress   string
+	AgentKey       string
+	AppName        string
+	AppVersion     string
+	AppEnvironment string
+	HostName       string
+	Debug          bool
+	ProfileAgent   bool
 }
 
 //Agent ...
@@ -42,11 +45,11 @@ type Agent struct {
 }
 
 //NewAgent DEPRECATED. Kept for compatibility with <1.4.3.
-func NewAgent() *Agent {
+func NewAgent(histo *prometheus.HistogramVec) *Agent {
 	a := &Agent{
-		internalAgent: internal.NewAgent(),
+		internalAgent: internal.NewAgent(histo),
 	}
-
+	Histo = histo
 	return a
 }
 
@@ -58,7 +61,7 @@ var _agent *Agent
 func Start(options Options) *Agent {
 	if _agent == nil {
 		_agent = &Agent{
-			internalAgent: internal.NewAgent(),
+			internalAgent: internal.NewAgent(Histo),
 		}
 	}
 
@@ -85,8 +88,8 @@ func (a *Agent) Start(options Options) {
 		a.internalAgent.HostName = options.HostName
 	}
 
-	if options.DashboardAddress != "" {
-		a.internalAgent.DashboardAddress = options.DashboardAddress
+	if options.PromethRoute != "" {
+		a.internalAgent.PromethRoute = options.PromethRoute
 	}
 
 	if options.ProxyAddress != "" {
@@ -107,11 +110,12 @@ func (a *Agent) Start(options Options) {
 //Configure - DEPRECATED. Kept for compatibility with <1.2.0.
 func (a *Agent) Configure(agentKey string, appName string) {
 	a.Start(Options{
-		AgentKey:         agentKey,
-		AppName:          appName,
-		HostName:         a.HostName,
-		DashboardAddress: a.DashboardAddress,
-		Debug:            a.Debug,
+		AgentKey:     agentKey,
+		AppName:      appName,
+		HostName:     a.HostName,
+		PromethRoute: "/metrics",
+		// DashboardAddress: a.DashboardAddress,
+		Debug: a.Debug,
 	})
 }
 

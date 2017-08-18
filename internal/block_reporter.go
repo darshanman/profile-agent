@@ -21,7 +21,7 @@ type BlockValues struct {
 
 //BlockReporter ...
 type BlockReporter struct {
-	agent             Agent
+	agent             *Agent
 	profilerScheduler *ProfilerScheduler
 	prevValues        map[string]*BlockValues
 	blockProfile      *BreakdownNode
@@ -29,7 +29,7 @@ type BlockReporter struct {
 	profileDuration   int64
 }
 
-func newBlockReporter(agent Agent) *BlockReporter {
+func newBlockReporter(agent *Agent) *BlockReporter {
 	br := &BlockReporter{
 		agent:             agent,
 		profilerScheduler: nil,

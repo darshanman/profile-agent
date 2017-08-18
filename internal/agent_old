@@ -11,23 +11,17 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/prometheus/client_golang/prometheus"
 )
 
-//AgentVersion ...
 const AgentVersion = "2.0.1"
+const SAASDashboardAddress = "https://agent-api.stackimpact.com"
 
-//DefaultPromethRoute ...
-const DefaultPromethRoute = "/metrics"
+var agentStarted bool = false
 
-var agentStarted bool
-
-//Agent ...
 type Agent struct {
-	nextID  int64
-	buildID string
-	runID   string
+	nextId  int64
+	buildId string
+	runId   string
 	runTs   int64
 
 	apiRequest         *APIRequest
@@ -44,23 +38,22 @@ type Agent struct {
 	profilerLock *sync.Mutex
 
 	// Options
-	PromethRoute   string
-	ProxyAddress   string
-	AgentKey       string
-	AppName        string
-	AppVersion     string
-	AppEnvironment string
-	HostName       string
-	Debug          bool
-	ProfileAgent   bool
+	DashboardAddress string
+	ProxyAddress     string
+	AgentKey         string
+	AppName          string
+	AppVersion       string
+	AppEnvironment   string
+	HostName         string
+	Debug            bool
+	ProfileAgent     bool
 }
 
-//NewAgent ...
-func NewAgent(histo *prometheus.HistogramVec) *Agent {
+func NewAgent() *Agent {
 	a := &Agent{
-		nextID:  0,
-		runID:   "",
-		buildID: "",
+		nextId:  0,
+		runId:   "",
+		buildId: "",
 		runTs:   time.Now().Unix(),
 
 		apiRequest:         nil,
@@ -76,21 +69,21 @@ func NewAgent(histo *prometheus.HistogramVec) *Agent {
 
 		profilerLock: &sync.Mutex{},
 
-		PromethRoute:   DefaultPromethRoute,
-		ProxyAddress:   "",
-		AgentKey:       "",
-		AppName:        "",
-		AppVersion:     "",
-		AppEnvironment: "",
-		HostName:       "",
-		Debug:          false,
-		ProfileAgent:   false,
+		DashboardAddress: SAASDashboardAddress,
+		ProxyAddress:     "",
+		AgentKey:         "",
+		AppName:          "",
+		AppVersion:       "",
+		AppEnvironment:   "",
+		HostName:         "",
+		Debug:            false,
+		ProfileAgent:     false,
 	}
 
-	a.buildID = a.calculateProgramSHA1()
-	a.runID = a.uuid()
+	a.buildId = a.calculateProgramSHA1()
+	a.runId = a.uuid()
 
-	a.apiRequest = newAPIRequest(a, histo)
+	a.apiRequest = newAPIRequest(a)
 	a.config = newConfig(a)
 	a.configLoader = newConfigLoader(a)
 	a.messageQueue = newMessageQueue(a)
@@ -196,7 +189,7 @@ func (a *Agent) recoverAndLog() {
 }
 
 func (a *Agent) uuid() string {
-	n := atomic.AddInt64(&a.nextID, 1)
+	n := atomic.AddInt64(&a.nextId, 1)
 
 	uuid :=
 		strconv.FormatInt(time.Now().Unix(), 10) +

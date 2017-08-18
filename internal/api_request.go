@@ -6,33 +6,79 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"runtime"
 	"strconv"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 //APIRequest ...
 type APIRequest struct {
-	a Agent
+	agent *Agent
+	histo *prometheus.HistogramVec //http.Handler
 }
 
-func newAPIRequest(a Agent) *APIRequest {
+func newAPIRequest(a *Agent, histo *prometheus.HistogramVec) *APIRequest {
 	ar := &APIRequest{
-		a: a,
+		agent: a,
+		histo: histo,
 	}
 
 	return ar
 }
 
+func (ar *APIRequest) push(vecType string, payload []string) (map[string]interface{}, error) {
+	// switch vecType {
+	// case "histogram":
+	if len(payload) < 1 {
+		log.Println("returning... len(payload) is, ", len(payload))
+		return nil, nil
+	}
+	now := time.Now()
+	log.Println("pushing to hist")
+	log.Println("len(payload): ", len(payload))
+	log.Println("payload: ", payload)
+	// values := make([]string, len(payload))
+	// i := 0
+	// var value string
+	// for _, pl := range payload {
+	// 	switch p := pl.(type) {
+	// 	case map[string]interface{}:
+	// 		value = fmt.Sprint(p["content"])
+	// 	default:
+	// 		value = fmt.Sprint(p)
+	// 		log.Println(value)
+	// 		values[i] = value
+	// 	}
+	//
+	// 	i++
+	// }
+	time.Sleep(1000 * time.Millisecond)
+	if obs, err := ar.histo.GetMetricWithLabelValues(payload...); err != nil {
+		log.Println("ERR: ", err)
+
+	} else {
+		obs.Observe(time.Since(now).Seconds())
+	}
+
+	// ar.histo.WithLabelValues(payload...).Observe(time.Since(now).Seconds())
+	// }
+	return nil, nil
+}
+
 func (ar *APIRequest) post(endpoint string, payload map[string]interface{}) (map[string]interface{}, error) {
+	log.Println("returning from APIRrequest.Post")
+	return nil, nil
 	reqBody := map[string]interface{}{
 		"runtime_type":    "go",
 		"runtime_version": runtime.Version(),
 		"agent_version":   AgentVersion,
-		"app_name":        ar.agent.GetAppName,
+		"app_name":        ar.agent.AppName,
 		"app_version":     ar.agent.AppVersion,
 		"app_environment": ar.agent.AppEnvironment,
 		"host_name":       ar.agent.HostName,
@@ -51,7 +97,7 @@ func (ar *APIRequest) post(endpoint string, payload map[string]interface{}) (map
 	w.Write(reqbodyJSON)
 	w.Close()
 
-	u := ar.agent.DashboardAddress + "/agent/v1/" + endpoint
+	u := ar.agent.PromethRoute + "/agent/v1/" + endpoint
 	req, err := http.NewRequest("POST", u, &buf)
 	if err != nil {
 		return nil, err

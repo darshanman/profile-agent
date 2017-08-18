@@ -1,4 +1,4 @@
-package main
+package examples
 
 import (
 	"fmt"
@@ -12,10 +12,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/darshanman/profile-agent"
+	profileagent "github.com/darshanman/profile-agent"
 )
 
-var agent *profileagent.Agent
+var agent2 *profileagent.Agent
 
 func useCPU(duration int, usage int) {
 	for j := 0; j < duration; j++ {
@@ -30,7 +30,7 @@ func useCPU(duration int, usage int) {
 	}
 }
 
-func simulateCPUUsage() {
+func SimulateCPUUsage() {
 	// sumulate CPU usage anomaly - every 45 minutes
 	cpuAnomalyTicker := time.NewTicker(45 * time.Minute)
 	go func() {
@@ -49,7 +49,7 @@ func simulateCPUUsage() {
 
 func leakMemory(duration int, size int) {
 	mem := make([]string, 0)
-
+	defer log.Println("exiting leakMemory")
 	for j := 0; j < duration; j++ {
 		go func() {
 			for i := 0; i < size; i++ {
@@ -61,22 +61,24 @@ func leakMemory(duration int, size int) {
 	}
 }
 
-func simulateMemoryLeak() {
-	// simulate memory leak - constantly
-	constantTicker := time.NewTicker(2 * 3600 * time.Second)
-	go func() {
-		for {
-			select {
-			case <-constantTicker.C:
-				leakMemory(2*3600, 1000)
-			}
-		}
-	}()
+//SimulateMemoryLeak - constantly
+func SimulateMemoryLeak() {
 
-	go leakMemory(2*3600, 1000)
+	// constantTimer := time.NewTimer(2 * 3600 * time.Second)
+	// go func() {
+	// 	// for {
+	// 	// select {
+	// 	// case <-constantTimer.C:
+	// 	<-constantTimer.C
+	// 	leakMemory(2*3600, 1000)
+	// 	// }
+	// 	// }
+	// }()
+
+	go leakMemory(2*60, 1000)
 }
 
-func simulateChannelWait() {
+func SimulateChannelWait() {
 	for {
 		done := make(chan bool)
 
@@ -100,7 +102,7 @@ func simulateChannelWait() {
 	}
 }
 
-func simulateNetworkWait() {
+func SimulateNetworkWait() {
 	// start HTTP server
 	go func() {
 		http.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
@@ -133,7 +135,7 @@ func simulateNetworkWait() {
 	}
 }
 
-func simulateSyscallWait() {
+func SimulateSyscallWait() {
 	for {
 		done := make(chan bool)
 
@@ -152,7 +154,7 @@ func simulateSyscallWait() {
 	}
 }
 
-func simulateLockWait() {
+func SimulateLockWait() {
 	for {
 		done := make(chan bool)
 
@@ -177,12 +179,12 @@ func simulateLockWait() {
 	}
 }
 
-func simulateSegments() {
+func SimulateSegments() {
 	for {
 		done1 := make(chan bool)
 
 		go func() {
-			segment := agent.MeasureSegment("Segment1")
+			segment := agent2.MeasureSegment("Segment1")
 			defer segment.Stop()
 
 			time.Sleep(time.Duration(100+rand.Intn(20)) * time.Millisecond)
@@ -194,16 +196,16 @@ func simulateSegments() {
 	}
 }
 
-func simulateHandlerSegments() {
+func SimulateHandlerSegments() {
 	// start HTTP server
 	go func() {
-		http.HandleFunc(agent.MeasureHandlerFunc("/some-handler-func", func(w http.ResponseWriter, r *http.Request) {
+		http.HandleFunc(agent2.MeasureHandlerFunc("/some-handler-func", func(w http.ResponseWriter, r *http.Request) {
 			time.Sleep(time.Duration(200+rand.Intn(50)) * time.Millisecond)
 
 			fmt.Fprintf(w, "OK")
 		}))
 
-		http.Handle(agent.MeasureHandler("/some-handler", http.StripPrefix("/some-handler", http.FileServer(http.Dir("/tmp")))))
+		http.Handle(agent2.MeasureHandler("/some-handler", http.StripPrefix("/some-handler", http.FileServer(http.Dir("/tmp")))))
 
 		if err := http.ListenAndServe(":5001", nil); err != nil {
 			log.Fatal(err)
@@ -228,10 +230,10 @@ func simulateHandlerSegments() {
 	}
 }
 
-func simulateErrors() {
+func SimulateErrors() {
 	go func() {
 		for {
-			agent.RecordError(fmt.Sprintf("A handled exception %v", rand.Intn(10)))
+			agent2.RecordError(fmt.Sprintf("A handled exception %v", rand.Intn(10)))
 
 			time.Sleep(2 * time.Second)
 		}
@@ -239,7 +241,7 @@ func simulateErrors() {
 
 	go func() {
 		for {
-			agent.RecordError(fmt.Errorf("A handled exception %v", rand.Intn(10)))
+			agent2.RecordError(fmt.Errorf("A handled exception %v", rand.Intn(10)))
 
 			time.Sleep(10 * time.Second)
 		}
@@ -248,7 +250,7 @@ func simulateErrors() {
 	go func() {
 		for {
 			go func() {
-				defer agent.RecordAndRecoverPanic()
+				defer agent2.RecordAndRecoverPanic()
 
 				panic("A recovered panic")
 			}()
@@ -265,7 +267,7 @@ func simulateErrors() {
 						// recover from unrecovered panic
 					}
 				}()
-				defer agent.RecordPanic()
+				defer agent2.RecordPanic()
 
 				panic("An unrecovered panic")
 			}()
@@ -276,26 +278,26 @@ func simulateErrors() {
 
 }
 
-func main() {
+func profilemain() {
 	// StackImpact initialization
-	agent = profileagent.Start(profileagent.Options{
-		AgentKey:         os.Getenv("AGENT_KEY"),
-		AppName:          "ExampleGoApp",
-		AppVersion:       "1.0.0",
-		DashboardAddress: os.Getenv("DASHBOARD_ADDRESS"), // test only
-		Debug:            false,
+	agent2 = profileagent.Start(profileagent.Options{
+		AgentKey:   os.Getenv("AGENT_KEY"),
+		AppName:    "ExampleGoApp",
+		AppVersion: "1.0.0",
+		// DashboardAddress: os.Getenv("DASHBOARD_ADDRESS"), // test only
+		Debug: false,
 	})
 	// end StackImpact initialization
 
-	go simulateCPUUsage()
-	go simulateMemoryLeak()
-	go simulateChannelWait()
-	go simulateNetworkWait()
-	go simulateSyscallWait()
-	go simulateLockWait()
-	go simulateSegments()
-	go simulateHandlerSegments()
-	go simulateErrors()
+	go SimulateCPUUsage()
+	go SimulateMemoryLeak()
+	go SimulateChannelWait()
+	go SimulateNetworkWait()
+	go SimulateSyscallWait()
+	go SimulateLockWait()
+	go SimulateSegments()
+	go SimulateHandlerSegments()
+	go SimulateErrors()
 
 	select {}
 }

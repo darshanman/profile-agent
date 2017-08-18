@@ -16,13 +16,13 @@ import (
 
 //CPUReporter .,.
 type CPUReporter struct {
-	agent             Agent
+	agent             *Agent
 	profilerScheduler *ProfilerScheduler
 	profile           *BreakdownNode
 	profileDuration   int64
 }
 
-func newCPUReporter(agent Agent) *CPUReporter {
+func newCPUReporter(agent *Agent) *CPUReporter {
 	cr := &CPUReporter{
 		agent:             agent,
 		profilerScheduler: nil,

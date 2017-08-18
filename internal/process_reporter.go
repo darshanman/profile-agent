@@ -7,11 +7,11 @@ import (
 
 //ProcessReporter ...
 type ProcessReporter struct {
-	agent   Agent
+	agent   *Agent
 	metrics map[string]*Metric
 }
 
-func newProcessReporter(agent Agent) *ProcessReporter {
+func newProcessReporter(agent *Agent) *ProcessReporter {
 	pr := &ProcessReporter{
 		agent:   agent,
 		metrics: make(map[string]*Metric),

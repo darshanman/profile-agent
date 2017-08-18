@@ -6,12 +6,12 @@ import (
 
 //Config ...
 type Config struct {
-	agent             Agent
+	agent             *Agent
 	configLock        *sync.RWMutex
 	profilingDisabled bool
 }
 
-func newConfig(agent Agent) *Config {
+func newConfig(agent *Agent) *Config {
 	c := &Config{
 		agent:             agent,
 		configLock:        &sync.RWMutex{},
